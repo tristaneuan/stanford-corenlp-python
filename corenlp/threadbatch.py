@@ -2,6 +2,7 @@ import os
 import tempfile
 import time
 from subprocess import Popen, PIPE
+from signal import SIGTERM
 from hashlib import sha1
 from corenlp import init_corenlp_command
 
@@ -31,6 +32,7 @@ class BatchParseThreader(object):
         self.memory = memory
         self.properties = properties
         self.processes = {}
+        self.time = {}
 
     def get_batch_command(self, subdir):
         #xml_dir = tempfile.mkdtemp()
@@ -58,14 +60,80 @@ class BatchParseThreader(object):
                     print 'xml_dir:', self.processes[i][1]
                     if sd.isNext():
                         command, xml_dir = self.get_batch_command(sd.getNext())
+                        print command
                         self.processes[i] = (Popen([command], shell=True), xml_dir)
                     else:
                         break
 
+    def openProcess(self, i, directory):
+        #command = 'ls -1 %s | grep -c .' % directory
+        #command = 'bash sleep.sh %s' % os.path.split(directory)[1]
+        command = 'python sleep.py %s' % os.path.split(directory)[1]
+        print str(i), command
+        self.time[i] = time.time()
+        self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
+        
+#    def filecount(self, directory, num_threads=5):
+#        sd = Subdir(directory)
+#        for i in range(num_threads):
+#            if sd.isNext():
+#                self.openProcess(i, sd.getNext())
+#        parsed_count = 0
+#        while parsed_count < sd.getLen():
+#            for i in range(num_threads):
+#                if self.processes[i].poll() != None:
+#                    print str(i), str(time.time() - self.time[i])
+#                    #if time.time() - self.time[i] > 15:
+#                    #    print 'KILLING PROCESS %i' % i
+#                    #    self.processes[i].kill()
+#                    #    parsed_count += 1
+#                    #    if sd.isNext():
+#                    #        self.openProcess(i, sd.getNext())
+#                    #    break
+#                    parsed_count += 1
+#                    if sd.isNext():
+#                        self.openProcess(i, sd.getNext())
+#                    else:
+#                        break
+#        print 'parsed count: %i' % parsed_count                       
+
+    def filecount(self, directory, num_threads=5):
+        sd = Subdir(directory)
+        for i in range(num_threads):
+            if sd.isNext():
+                self.openProcess(i, sd.getNext())
+        parsed_count = 0
+        #test_count = 0
+        while parsed_count < sd.getLen():
+            #print 'test count: %i' % test_count
+            for i in range(num_threads):
+                if time.time() - self.time[i] > 10:
+                    try:
+                        print 'KILLING PROCESS %i' % i
+                        #self.processes[i].terminate()
+                        os.killpg(self.processes[i].pid, SIGTERM)
+                    except:
+                        pass
+                if self.processes[i].poll() == None:
+                    pass
+                else:
+                    parsed_count += 1
+                    if sd.isNext():
+                        self.openProcess(i, sd.getNext())
+                    #break
+#                    else:
+#                        break
+            #test_count += 1
+        print 'parsed count: %i' % parsed_count                       
+
 if __name__ == '__main__':
     b = BatchParseThreader()
-    start_time = time.time()
-    b.parse('/home/tristan/temp/batch/all', num_threads=3)
-    stats = open('/home/tristan/temp/time-3threads.txt', 'w')
-    stats.write('time elapsed: %i seconds' % (time.time() - start_time))
-    stats.close()
+    b.filecount('/home/tristan/temp/batch/all', 3)
+
+#if __name__ == '__main__':
+#    b = BatchParseThreader()
+#    start_time = time.time()
+#    b.parse('/home/tristan/temp/batch/all', num_threads=2)
+#    stats = open('/home/tristan/temp/time-2threads.txt', 'w')
+#    stats.write('time elapsed: %i seconds' % (time.time() - start_time))
+#    stats.close()
