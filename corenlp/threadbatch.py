@@ -27,90 +27,42 @@ class Subdir(object):
         return self.numDirs
 
 class BatchParseThreader(object):
-    def __init__(self, corenlp_dir='/home/tristan/stanford-corenlp-python/stanford-corenlp-full-2013-06-20', memory='3g', properties='/home/tristan/stanford-corenlp-python/corenlp/default.properties'):
+    def __init__(self, corenlp_dir='/home/tristan/stanford-corenlp-python/stanford-corenlp-full-2013-06-20', memory='3g', properties='/home/tristan/stanford-corenlp-python/corenlp/default.properties', xml_dir='/home/tristan/xml'):
         self.corenlp_dir = corenlp_dir
         self.memory = memory
         self.properties = properties
         self.processes = {}
         self.time = {}
+        self.xml_dir = xml_dir
 
     def get_batch_command(self, subdir):
         #xml_dir = tempfile.mkdtemp()
-        xml_dir = '/home/tristan/xml' #debug
+        #xml_dir = '/home/tristan/xml' #debug
         #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
         file_list = open('/home/tristan/temp/batch/filelist%s' % os.path.split(subdir)[1], 'w') #debug
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)
-        return  '%s -filelist %s -outputDirectory %s' % (init_corenlp_command(self.corenlp_dir, self.memory, self.properties), file_list.name, xml_dir), xml_dir
+        return  '%s -filelist %s -outputDirectory %s' % (init_corenlp_command(self.corenlp_dir, self.memory, self.properties), file_list.name, self.xml_dir)
 
-    def parse(self, directory, num_threads=5):
-        sd = Subdir(directory)
-        for i in range(num_threads):
-            if sd.isNext():
-                command, xml_dir = self.get_batch_command(sd.getNext())
-                print command #debug
-                self.processes[i] = (Popen([command], shell=True), xml_dir)
-        parsed_count = 0
-        #while True:
-        while parsed_count < sd.getLen():
-            for i in range(num_threads):
-                if self.processes[i][0].poll() != None:
-                    parsed_count += 1
-                    print 'xml_dir:', self.processes[i][1]
-                    if sd.isNext():
-                        command, xml_dir = self.get_batch_command(sd.getNext())
-                        print command
-                        self.processes[i] = (Popen([command], shell=True), xml_dir)
-                    else:
-                        break
-
-    def openProcess(self, i, directory):
-        #command = 'ls -1 %s | grep -c .' % directory
-        #command = 'bash sleep.sh %s' % os.path.split(directory)[1]
-        command = 'python sleep.py %s' % os.path.split(directory)[1]
+    def open_process(self, i, directory):
+        #command = 'python sleep.py %s' % os.path.split(directory)[1]
+        command = self.get_batch_command(directory)
         print str(i), command
         self.time[i] = time.time()
         self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
         
-#    def filecount(self, directory, num_threads=5):
-#        sd = Subdir(directory)
-#        for i in range(num_threads):
-#            if sd.isNext():
-#                self.openProcess(i, sd.getNext())
-#        parsed_count = 0
-#        while parsed_count < sd.getLen():
-#            for i in range(num_threads):
-#                if self.processes[i].poll() != None:
-#                    print str(i), str(time.time() - self.time[i])
-#                    #if time.time() - self.time[i] > 15:
-#                    #    print 'KILLING PROCESS %i' % i
-#                    #    self.processes[i].kill()
-#                    #    parsed_count += 1
-#                    #    if sd.isNext():
-#                    #        self.openProcess(i, sd.getNext())
-#                    #    break
-#                    parsed_count += 1
-#                    if sd.isNext():
-#                        self.openProcess(i, sd.getNext())
-#                    else:
-#                        break
-#        print 'parsed count: %i' % parsed_count                       
-
-    def filecount(self, directory, num_threads=5):
+    def parse(self, directory, num_threads=5, max_time=3600):
         sd = Subdir(directory)
         for i in range(num_threads):
             if sd.isNext():
-                self.openProcess(i, sd.getNext())
+                self.open_process(i, sd.getNext())
         parsed_count = 0
-        #test_count = 0
         while parsed_count < sd.getLen():
-            #print 'test count: %i' % test_count
             for i in range(num_threads):
-                if time.time() - self.time[i] > 10:
+                if time.time() - self.time[i] > max_time:
                     try:
                         print 'KILLING PROCESS %i' % i
-                        #self.processes[i].terminate()
                         os.killpg(self.processes[i].pid, SIGTERM)
                     except:
                         pass
@@ -119,21 +71,35 @@ class BatchParseThreader(object):
                 else:
                     parsed_count += 1
                     if sd.isNext():
-                        self.openProcess(i, sd.getNext())
-                    #break
-#                    else:
-#                        break
-            #test_count += 1
+                        self.open_process(i, sd.getNext())
+        #for i in range(num_threads):
+        #    if time.time() - self.time[i] > max_time:
+        #        try:
+        #            print 'KILLING PROCESS %i' % i
+        #            os.killpg(self.processes[i].pid, SIGTERM)
+        #        except:
+        #            pass
+        #    self.processes[i].wait()
+            
+
         print 'parsed count: %i' % parsed_count                       
 
 if __name__ == '__main__':
+    a = BatchParseThreader()
+    a_time = time.time()
+    a.parse('/home/tristan/temp/batch/all', num_threads=3)
+    a_stats = open('/home/tristan/temp/time-3threads.txt', 'w')
+    a_stats.write('time elapsed: %i seconds' % (time.time() - a_time))
+    a_stats.close()
     b = BatchParseThreader()
-    b.filecount('/home/tristan/temp/batch/all', 3)
-
-#if __name__ == '__main__':
-#    b = BatchParseThreader()
-#    start_time = time.time()
-#    b.parse('/home/tristan/temp/batch/all', num_threads=2)
-#    stats = open('/home/tristan/temp/time-2threads.txt', 'w')
-#    stats.write('time elapsed: %i seconds' % (time.time() - start_time))
-#    stats.close()
+    b_time = time.time()
+    b.parse('/home/tristan/temp/batch/all', num_threads=2)
+    b_stats = open('/home/tristan/temp/time-2threads.txt', 'w')
+    b_stats.write('time elapsed: %i seconds' % (time.time() - b_time))
+    b_stats.close()
+    c = BatchParseThreader()
+    c_time = time.time()
+    c.parse('/home/tristan/temp/batch/all', num_threads=1)
+    c_stats = open('/home/tristan/temp/time-1threads.txt', 'w')
+    c_stats.write('time elapsed: %i seconds' % (time.time() - c_time))
+    c_stats.close()
