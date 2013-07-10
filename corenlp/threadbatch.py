@@ -39,7 +39,7 @@ class BatchParseThreader(object):
         #xml_dir = tempfile.mkdtemp()
         #xml_dir = '/home/tristan/xml' #debug
         #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
-        file_list = open('/home/tristan/temp/batch/filelist%s' % os.path.split(subdir)[1], 'w') #debug
+        file_list = open('/home/tristan/temp/batch/filelist%s' % os.path.basename(subdir), 'w') #debug
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)
@@ -59,6 +59,7 @@ class BatchParseThreader(object):
                 self.open_process(i, sd.getNext())
         parsed_count = 0
         while parsed_count < sd.getLen():
+            #TODO - sleep for 30 seconds here
             for i in range(num_threads):
                 if time.time() - self.time[i] > max_time:
                     try:
@@ -83,23 +84,24 @@ class BatchParseThreader(object):
             
 
         print 'parsed count: %i' % parsed_count                       
+        return self.xml_dir
 
 if __name__ == '__main__':
     a = BatchParseThreader()
     a_time = time.time()
     a.parse('/home/tristan/temp/batch/all', num_threads=3)
-    a_stats = open('/home/tristan/temp/time-3threads.txt', 'w')
+    a_stats = open('/home/tristan/temp/3035time-3threads.txt', 'w')
     a_stats.write('time elapsed: %i seconds' % (time.time() - a_time))
     a_stats.close()
     b = BatchParseThreader()
     b_time = time.time()
     b.parse('/home/tristan/temp/batch/all', num_threads=2)
-    b_stats = open('/home/tristan/temp/time-2threads.txt', 'w')
+    b_stats = open('/home/tristan/temp/3035time-2threads.txt', 'w')
     b_stats.write('time elapsed: %i seconds' % (time.time() - b_time))
     b_stats.close()
     c = BatchParseThreader()
     c_time = time.time()
     c.parse('/home/tristan/temp/batch/all', num_threads=1)
-    c_stats = open('/home/tristan/temp/time-1threads.txt', 'w')
+    c_stats = open('/home/tristan/temp/3035time-1threads.txt', 'w')
     c_stats.write('time elapsed: %i seconds' % (time.time() - c_time))
     c_stats.close()
