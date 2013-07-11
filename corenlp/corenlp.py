@@ -201,13 +201,17 @@ def parse_parser_results(text):
 
     return results
 
-
 def parse_parser_xml_results(xml, file_name="", raw_output=False):
     import xmltodict
-    from collections import OrderedDict
+    #from collections import OrderedDict
 
     def extract_words_from_xml(sent_node):
-        exted = map(lambda x: x['word'], sent_node['tokens']['token'])
+        if type(sent_node['tokens']['token']) != list:
+            tokens = [sent_node['tokens']['token']]
+        else:
+            tokens = sent_node['tokens']['token']
+        exted = map(lambda x: x['word'], tokens)
+        #print exted #DEBUG
         return exted
 
     # Turning the raw xml into a raw python dictionary:
@@ -219,6 +223,8 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
 
     # Making a raw sentence list of dictionaries:
     raw_sent_list = document[u'sentences'][u'sentence']
+    if type(raw_sent_list) != list:
+        raw_sent_list = [raw_sent_list]
 
     if document.get(u'coreference') and document[u'coreference'].get(u'coreference'):
         # Convert coreferences to the format like python
@@ -227,13 +233,23 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
         # Making a raw coref dictionary:
         raw_coref_list = document[u'coreference'][u'coreference']
 
+        #print 'len(raw_coref_list) = %i' % len(raw_coref_list)
+
         # To dicrease is for given index different from list index
-        coref_index = [[[int(raw_coref_list[j][u'mention'][i]['sentence']) - 1,
-                         int(raw_coref_list[j][u'mention'][i]['head']) - 1,
-                         int(raw_coref_list[j][u'mention'][i]['start']) - 1,
-                         int(raw_coref_list[j][u'mention'][i]['end']) - 1]
-                        for i in xrange(len(raw_coref_list[j][u'mention']))]
-                       for j in xrange(len(raw_coref_list))]
+        if len(raw_coref_list) > 1:
+            coref_index = [[[int(raw_coref_list[j][u'mention'][i]['sentence']) - 1,
+                             int(raw_coref_list[j][u'mention'][i]['head']) - 1,
+                             int(raw_coref_list[j][u'mention'][i]['start']) - 1,
+                             int(raw_coref_list[j][u'mention'][i]['end']) - 1]
+                            for i in xrange(len(raw_coref_list[j][u'mention']))]
+                           for j in xrange(len(raw_coref_list))]
+        else:
+            coref_index = [[[int(raw_coref_list[u'mention'][i]['sentence']) - 1,
+                             int(raw_coref_list[u'mention'][i]['head']) - 1,
+                             int(raw_coref_list[u'mention'][i]['start']) - 1,
+                             int(raw_coref_list[u'mention'][i]['end']) - 1]
+                            for i in xrange(len(raw_coref_list[u'mention']))]]
+
 
         coref_list = []
         for j in xrange(len(coref_index)):
@@ -249,26 +265,106 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
     else:
         coref_flag = False
 
+    from pprint import pprint
+    pprint(raw_sent_list) #DEBUG
+
     # Convert sentences to the format like python
     # TODO: If there is only one sentence in input sentence,
     # raw_sent_list is dict and cannot decode following code...
-    sentences = [{'dependencies': [[dep['dep'][i]['@type'],
-                                    dep['dep'][i]['governor']['#text'],
-                                    dep['dep'][i]['dependent']['#text']]
-                                   for dep in raw_sent_list[j][u'dependencies']
-                                   for i in xrange(len(dep['dep']))
-                                   if dep['@type'] == 'basic-dependencies'],
-                  'text': extract_words_from_xml(raw_sent_list[j]),
-                  'parsetree': str(raw_sent_list[j]['parse']),
-                  'words': [[str(token['word']), OrderedDict([
+
+    sentences = []
+    #if type(raw_sent_list) == list:
+    for j in xrange(len(raw_sent_list)):
+        dependencies = []
+        for dep in raw_sent_list[j][u'dependencies']:
+            if dep['@type'] == 'basic-dependencies':
+                #if len(dep['dep']) > 1:
+                #print 'DEP:', dep
+                if 'dep' in dep:
+                    if type(dep['dep']) == list:
+                        for i in xrange(len(dep['dep'])):
+                            dependencies.append([dep['dep'][i]['@type'],
+                                                 dep['dep'][i]['governor']['#text'],
+                                                 dep['dep'][i]['dependent']['#text']])
+                    else:
+                        dependencies.append([dep['dep']['@type'],
+                                             dep['dep']['governor']['#text'],
+                                             dep['dep']['dependent']['#text']])
+        text = extract_words_from_xml(raw_sent_list[j])
+        parsetree = str(raw_sent_list[j]['parse'])
+        words = []
+        #print 'tokens', raw_sent_list[j][u'tokens'][u'token']
+        if type(raw_sent_list[j][u'tokens'][u'token']) != list:
+            tokens = [raw_sent_list[j][u'tokens'][u'token']]
+        else:
+            tokens = raw_sent_list[j][u'tokens'][u'token']
+        for token in tokens:
+            words.append([str(token['word']), dict([
                       ('NamedEntityTag', str(token['NER'])),
                       ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
                       ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
                       ('PartOfSpeech', str(token['POS'])),
-                      ('Lemma', str(token['lemma']))])]
-                  for token in raw_sent_list[j][u'tokens'][u'token']]}
+                      ('Lemma', str(token['lemma']))])])
+        sentence = {'dependencies': dependencies,
+                    'text': text,
+                    'parsetree': parsetree,
+                    'words': words}
+        sentences.append(sentence)
+    #else:
+    #    dependencies = []
+    #    for dep in raw_sent_list[u'dependencies']:
+    #        if dep['@type'] == 'basic-dependencies':
+    #            #if len(dep['dep']) > 1:
+    #            #print 'DEP:', dep
+    #            if 'dep' in dep:
+    #                if type(dep['dep']) == list:
+    #                    for i in xrange(len(dep['dep'])):
+    #                        dependencies.append([dep['dep'][i]['@type'],
+    #                                             dep['dep'][i]['governor']['#text'],
+    #                                             dep['dep'][i]['dependent']['#text']])
+    #                else:
+    #                    dependencies.append([dep['dep']['@type'],
+    #                                         dep['dep']['governor']['#text'],
+    #                                         dep['dep']['dependent']['#text']])
+    #    text = extract_words_from_xml(raw_sent_list)
+    #    parsetree = str(raw_sent_list['parse'])
+    #    words = []
+    #    for token in raw_sent_list[u'tokens'][u'token']:
+    #        words.append([str(token['word']), dict([
+    #                  ('NamedEntityTag', str(token['NER'])),
+    #                  ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
+    #                  ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
+    #                  ('PartOfSpeech', str(token['POS'])),
+    #                  ('Lemma', str(token['lemma']))])])
+    #    sentence = {'dependencies': dependencies,
+    #                'text': text,
+    #                'parsetree': parsetree,
+    #                'words': words}
+    #    sentences.append(sentence)
 
-                 for j in xrange(len(raw_sent_list))]
+
+
+
+#    sentences2 = [{'dependencies': [[dep['dep'][i]['@type'],
+#                                    dep['dep'][i]['governor']['#text'],
+#                                    dep['dep'][i]['dependent']['#text']]
+#                                   for dep in raw_sent_list[j][u'dependencies']
+#                                   for i in xrange(len(dep['dep']))
+#                                   if dep['@type'] == 'basic-dependencies'],
+#                  'text': extract_words_from_xml(raw_sent_list[j]),
+#                  'parsetree': str(raw_sent_list[j]['parse']),
+#                  'words': [[str(token['word']), dict([
+#                      ('NamedEntityTag', str(token['NER'])),
+#                      ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
+#                      ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
+#                      ('PartOfSpeech', str(token['POS'])),
+#                      ('Lemma', str(token['lemma']))])]
+#                  for token in raw_sent_list[j][u'tokens'][u'token']]}
+#
+#                 for j in xrange(len(raw_sent_list))]
+
+    print 'NEW SENTENCES', sentences
+    #print 'ORIGINAL SENTENCES', sentences2
 
     if coref_flag:
         results = {'coref': coref_list, 'sentences': sentences}
@@ -279,7 +375,6 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
         results['file_name'] = file_name
 
     return results
-
 
 def parse_xml_output(input_dir, corenlp_path=DIRECTORY, memory="3g", raw_output=False, properties='default.properties'):
     """Because interaction with the command-line interface of the CoreNLP
