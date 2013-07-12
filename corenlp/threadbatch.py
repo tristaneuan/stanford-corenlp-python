@@ -13,6 +13,8 @@ class Subdir(object):
         self.index = 0
         if len(self.dirs) > 1:
             self.existsNext = True
+        else:
+            self.existsNext = False
 
     def getNext(self):
         self.index += 1
@@ -59,7 +61,8 @@ class BatchParseThreader(object):
                 self.open_process(i, sd.getNext())
         parsed_count = 0
         while parsed_count < sd.getLen():
-            #TODO - sleep for 30 seconds here
+            # sleep to avoid looping incessantly
+            time.sleep(30)
             for i in range(num_threads):
                 if time.time() - self.time[i] > max_time:
                     try:
