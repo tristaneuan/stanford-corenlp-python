@@ -11,5 +11,6 @@ __license__ = 'GNU v2+'
 
 # classes
 from corenlp import StanfordCoreNLP, ParserError, TimeoutError, ProcessError
+from threadbatch import BatchParseThreader, Subdir
 # functions
-from corenlp import batch_parse
+from corenlp import batch_parse, parse_parser_xml_results
