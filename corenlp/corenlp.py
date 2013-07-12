@@ -265,8 +265,8 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
     else:
         coref_flag = False
 
-    from pprint import pprint
-    pprint(raw_sent_list) #DEBUG
+#    from pprint import pprint
+#    pprint(raw_sent_list) #DEBUG
 
     # Convert sentences to the format like python
     # TODO: If there is only one sentence in input sentence,
@@ -363,7 +363,7 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
 #
 #                 for j in xrange(len(raw_sent_list))]
 
-    print 'NEW SENTENCES', sentences
+    #print 'NEW SENTENCES', sentences
     #print 'ORIGINAL SENTENCES', sentences2
 
     if coref_flag:
