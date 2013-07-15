@@ -298,7 +298,7 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
                                              dep['dep']['governor']['#text'],
                                              dep['dep']['dependent']['#text']])
         text = extract_words_from_xml(raw_sent_list[j])
-        parsetree = str(raw_sent_list[j]['parse'])
+        parsetree = unicode(raw_sent_list[j]['parse'])
         words = []
         #print 'tokens', raw_sent_list[j][u'tokens'][u'token']
         if type(raw_sent_list[j][u'tokens'][u'token']) != list:
@@ -306,12 +306,12 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
         else:
             tokens = raw_sent_list[j][u'tokens'][u'token']
         for token in tokens:
-            words.append([str(token['word']), dict([
-                      ('NamedEntityTag', str(token['NER'])),
-                      ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
-                      ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
-                      ('PartOfSpeech', str(token['POS'])),
-                      ('Lemma', str(token['lemma']))])])
+            words.append([unicode(token['word']), dict([
+                      ('NamedEntityTag', unicode(token['NER'])),
+                      ('CharacterOffsetEnd', unicode(token['CharacterOffsetEnd'])),
+                      ('CharacterOffsetBegin', unicode(token['CharacterOffsetBegin'])),
+                      ('PartOfSpeech', unicode(token['POS'])),
+                      ('Lemma', unicode(token['lemma']))])])
         sentence = {'dependencies': dependencies,
                     'text': text,
                     'parsetree': parsetree,
@@ -334,15 +334,15 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
     #                                         dep['dep']['governor']['#text'],
     #                                         dep['dep']['dependent']['#text']])
     #    text = extract_words_from_xml(raw_sent_list)
-    #    parsetree = str(raw_sent_list['parse'])
+    #    parsetree = unicode(raw_sent_list['parse'])
     #    words = []
     #    for token in raw_sent_list[u'tokens'][u'token']:
-    #        words.append([str(token['word']), dict([
-    #                  ('NamedEntityTag', str(token['NER'])),
-    #                  ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
-    #                  ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
-    #                  ('PartOfSpeech', str(token['POS'])),
-    #                  ('Lemma', str(token['lemma']))])])
+    #        words.append([unicode(token['word']), dict([
+    #                  ('NamedEntityTag', unicode(token['NER'])),
+    #                  ('CharacterOffsetEnd', unicode(token['CharacterOffsetEnd'])),
+    #                  ('CharacterOffsetBegin', unicode(token['CharacterOffsetBegin'])),
+    #                  ('PartOfSpeech', unicode(token['POS'])),
+    #                  ('Lemma', unicode(token['lemma']))])])
     #    sentence = {'dependencies': dependencies,
     #                'text': text,
     #                'parsetree': parsetree,
@@ -359,13 +359,13 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
 #                                   for i in xrange(len(dep['dep']))
 #                                   if dep['@type'] == 'basic-dependencies'],
 #                  'text': extract_words_from_xml(raw_sent_list[j]),
-#                  'parsetree': str(raw_sent_list[j]['parse']),
-#                  'words': [[str(token['word']), dict([
-#                      ('NamedEntityTag', str(token['NER'])),
-#                      ('CharacterOffsetEnd', str(token['CharacterOffsetEnd'])),
-#                      ('CharacterOffsetBegin', str(token['CharacterOffsetBegin'])),
-#                      ('PartOfSpeech', str(token['POS'])),
-#                      ('Lemma', str(token['lemma']))])]
+#                  'parsetree': unicode(raw_sent_list[j]['parse']),
+#                  'words': [[unicode(token['word']), dict([
+#                      ('NamedEntityTag', unicode(token['NER'])),
+#                      ('CharacterOffsetEnd', unicode(token['CharacterOffsetEnd'])),
+#                      ('CharacterOffsetBegin', unicode(token['CharacterOffsetBegin'])),
+#                      ('PartOfSpeech', unicode(token['POS'])),
+#                      ('Lemma', unicode(token['lemma']))])]
 #                  for token in raw_sent_list[j][u'tokens'][u'token']]}
 #
 #                 for j in xrange(len(raw_sent_list))]
