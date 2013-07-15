@@ -226,6 +226,9 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
     if type(raw_sent_list) != list:
         raw_sent_list = [raw_sent_list]
 
+    #from pprint import pprint
+    #pprint(raw_sent_list)
+
     if document.get(u'coreference') and document[u'coreference'].get(u'coreference'):
         # Convert coreferences to the format like python
         coref_flag = True
@@ -255,7 +258,11 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
         for j in xrange(len(coref_index)):
             coref_list.append(coref_index[j])
             for k, coref in enumerate(coref_index[j]):
-                exted = raw_sent_list[coref[0]]['tokens']['token'][coref[2]:coref[3]]
+                token = raw_sent_list[coref[0]]['tokens']['token']
+                if type(token) != list:
+                    token = [token]
+                #exted = raw_sent_list[coref[0]]['tokens']['token'][coref[2]:coref[3]]
+                exted = token[coref[2]:coref[3]]
                 exted_words = map(lambda x: x['word'], exted)
                 coref_list[j][k].insert(0, ' '.join(exted_words))
 
