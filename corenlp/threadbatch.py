@@ -41,7 +41,7 @@ class BatchParseThreader(object):
         #xml_dir = tempfile.mkdtemp()
         #xml_dir = '/home/tristan/xml' #debug
         #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
-        file_list = open('/home/tristan/temp/batch/filelist%s' % os.path.basename(subdir), 'w') #debug
+        file_list = open('/home/tristan/test-filelist/filelist%s' % os.path.basename(subdir), 'w') #debug
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)

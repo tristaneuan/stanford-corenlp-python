@@ -222,9 +222,12 @@ def parse_parser_xml_results(xml, file_name="", raw_output=False):
     document = raw_dict[u'root'][u'document']
 
     # Making a raw sentence list of dictionaries:
-    raw_sent_list = document[u'sentences'][u'sentence']
-    if type(raw_sent_list) != list:
-        raw_sent_list = [raw_sent_list]
+    try:
+        raw_sent_list = document[u'sentences'][u'sentence']
+        if type(raw_sent_list) != list:
+            raw_sent_list = [raw_sent_list]
+    except:
+        return {}
 
     #from pprint import pprint
     #pprint(raw_sent_list)
