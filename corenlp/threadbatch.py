@@ -41,7 +41,10 @@ class BatchParseThreader(object):
         #xml_dir = tempfile.mkdtemp()
         #xml_dir = '/home/tristan/xml' #debug
         #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
-        file_list = open('/home/tristan/test-filelist/filelist%s' % os.path.basename(subdir), 'w') #debug
+        file_list_path = '/data/filelist'
+        if not os.path.exists(file_list_path):
+            os.makedirs(file_list_path)
+        file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w') #debug
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)
@@ -57,13 +60,14 @@ class BatchParseThreader(object):
     def parse(self, directory, num_threads=5, max_time=3600):
         sd = Subdir(directory)
         for i in range(num_threads):
-            if sd.isNext():
+            if sd.getLen() == 1 or sd.isNext():
                 self.open_process(i, sd.getNext())
         parsed_count = 0
         while parsed_count < sd.getLen():
             # sleep to avoid looping incessantly
-            time.sleep(30)
+            time.sleep(5)
             for i in range(num_threads):
+                # TODO: this doesn't exactly work
                 if time.time() - self.time[i] > max_time:
                     try:
                         print 'KILLING PROCESS %i' % i
