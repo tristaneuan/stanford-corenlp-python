@@ -20,7 +20,10 @@ class Subdir(object):
         self.index += 1
         if self.index >= self.numDirs:
             self.existsNext = False
-        return self.dirs.get(self.index-1, None)
+        try:
+            return self.dirs[self.index-1]
+        except IndexError:
+            return None
 
     def isNext(self):
         return self.existsNext
