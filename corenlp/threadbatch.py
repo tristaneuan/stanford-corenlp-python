@@ -78,23 +78,13 @@ class BatchParseThreader(object):
                         os.killpg(self.processes[i].pid, SIGTERM)
                     except:
                         pass
-                if self.processes[i].poll() == None:
-                    pass
-                else:
-                    parsed_count += 1
-                    if sd.isNext():
-                        self.open_process(i, sd.getNext())
-        #for i in range(num_threads):
-        #    if time.time() - self.time[i] > max_time:
-        #        try:
-        #            print 'KILLING PROCESS %i' % i
-        #            os.killpg(self.processes[i].pid, SIGTERM)
-        #        except:
-        #            pass
-        #    self.processes[i].wait()
-            
+                if i in self.processes:
+                    if self.processes[i].poll() is not None:
+                        parsed_count += 1
+                        if sd.isNext():
+                            self.open_process(i, sd.getNext())
 
-        print 'parsed count: %i' % parsed_count                       
+        print 'parsed count: %i' % parsed_count
         return self.xml_dir
 
 if __name__ == '__main__':
