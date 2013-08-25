@@ -72,7 +72,7 @@ class BatchParseThreader(object):
             time.sleep(5)
             for i in range(num_threads):
                 # TODO: this doesn't exactly work
-                if time.time() - self.time[i] > max_time:
+                if time.time() - self.time.get(i, time.time()) > max_time:
                     try:
                         print 'KILLING PROCESS %i' % i
                         os.killpg(self.processes[i].pid, SIGTERM)
