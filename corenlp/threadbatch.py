@@ -20,7 +20,7 @@ class Subdir(object):
         self.index += 1
         if self.index >= self.numDirs:
             self.existsNext = False
-        return self.dirs[self.index-1]
+        return self.dirs.get(self.index-1, None)
 
     def isNext(self):
         return self.existsNext
@@ -52,10 +52,11 @@ class BatchParseThreader(object):
 
     def open_process(self, i, directory):
         #command = 'python sleep.py %s' % os.path.split(directory)[1]
-        command = self.get_batch_command(directory)
-        print str(i), command
-        self.time[i] = time.time()
-        self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
+        if directory:
+            command = self.get_batch_command(directory)
+            print str(i), command
+            self.time[i] = time.time()
+            self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
         
     def parse(self, directory, num_threads=5, max_time=3600):
         sd = Subdir(directory)
