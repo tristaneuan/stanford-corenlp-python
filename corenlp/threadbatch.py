@@ -32,7 +32,9 @@ class Subdir(object):
         return self.numDirs
 
 class BatchParseThreader(object):
-    def __init__(self, corenlp_dir='/home/tristan/stanford-corenlp-python/stanford-corenlp-full-2013-06-20', memory='3g', properties='/home/tristan/stanford-corenlp-python/corenlp/default.properties', xml_dir='/home/tristan/xml'):
+    def __init__(self, input_dir, corenlp_dir='/home/tristan/stanford-corenlp-python/stanford-corenlp-full-2013-06-20', memory='3g', properties='/home/tristan/stanford-corenlp-python/corenlp/default.properties', xml_dir='/home/tristan/xml'):
+        self.directory = input_dir
+        self.wid = os.path.basename(input_dir)
         self.corenlp_dir = corenlp_dir
         self.memory = memory
         self.properties = properties
@@ -44,10 +46,11 @@ class BatchParseThreader(object):
         #xml_dir = tempfile.mkdtemp()
         #xml_dir = '/home/tristan/xml' #debug
         #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
-        file_list_path = '/data/filelist'
+        file_list_path = '/data/filelist/' + self.wid
         if not os.path.exists(file_list_path):
             os.makedirs(file_list_path)
-        file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w') #debug
+        #file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w') #debug
+        file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w')
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)
@@ -61,8 +64,8 @@ class BatchParseThreader(object):
             self.time[i] = time.time()
             self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
         
-    def parse(self, directory, num_threads=5, max_time=3600):
-        sd = Subdir(directory)
+    def parse(self, num_threads=5, max_time=3600):
+        sd = Subdir(self.directory)
         for i in range(num_threads):
             if sd.getLen() == 1 or sd.isNext():
                 self.open_process(i, sd.getNext())
