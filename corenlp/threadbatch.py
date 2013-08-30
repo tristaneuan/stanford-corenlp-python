@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 import time
 from subprocess import Popen, PIPE
@@ -44,15 +45,22 @@ class BatchParseThreader(object):
 
     def get_batch_command(self, subdir):
         file_list_path = '/data/filelist/' + self.wid
+        file_list_name = os.path.join(file_list_path, os.path.basename(subdir))
+        output_directory = os.path.join(self.xml_dir, os.path.basename(subdir))
         if not os.path.exists(file_list_path):
             os.makedirs(file_list_path)
-        file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w')
-        files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
-        file_list.write('\n'.join(files))
-        file_list.seek(0)
-        output_directory = os.path.join(self.xml_dir, os.path.basename(file_list.name))
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
+        # don't include xml files in filelist if they already exist
+        preexisting = {}
+        for xml_file in os.listdir(output_directory):
+            pageid = re.sub('\.xml$', '', xml_file)
+            preexisting[pageid] = True
+
+        #files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
+        files = [os.path.join(subdir, f) for f in os.listdir(subdir) if not preexisting.get(f, False)]
+        with open(file_list_name, 'w') as file_list:
+            file_list.write('\n'.join(files))
         return  '%s -filelist %s -outputDirectory %s' % (init_corenlp_command(self.corenlp_dir, self.memory, self.properties), file_list.name, output_directory)
 
     def open_process(self, i, directory):
