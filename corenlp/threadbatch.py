@@ -43,27 +43,25 @@ class BatchParseThreader(object):
         self.xml_dir = xml_dir
 
     def get_batch_command(self, subdir):
-        #xml_dir = tempfile.mkdtemp()
-        #xml_dir = '/home/tristan/xml' #debug
-        #file_list = tempfile.NamedTemporaryFile() #file disappears and java parser can't find it
         file_list_path = '/data/filelist/' + self.wid
         if not os.path.exists(file_list_path):
             os.makedirs(file_list_path)
-        #file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w') #debug
         file_list = open(os.path.join(file_list_path, os.path.basename(subdir)), 'w')
         files = [os.path.join(subdir, f) for f in os.listdir(subdir)]
         file_list.write('\n'.join(files))
         file_list.seek(0)
-        return  '%s -filelist %s -outputDirectory %s' % (init_corenlp_command(self.corenlp_dir, self.memory, self.properties), file_list.name, self.xml_dir)
+        output_directory = os.path.join(self.xml_dir, os.path.basename(file_list.name))
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+        return  '%s -filelist %s -outputDirectory %s' % (init_corenlp_command(self.corenlp_dir, self.memory, self.properties), file_list.name, output_directory)
 
     def open_process(self, i, directory):
-        #command = 'python sleep.py %s' % os.path.split(directory)[1]
         if directory:
             command = self.get_batch_command(directory)
             print str(i), command
             self.time[i] = time.time()
             self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
-        
+
     def parse(self, num_threads=5, max_time=3600):
         sd = Subdir(self.directory)
         for i in range(num_threads):
@@ -75,12 +73,12 @@ class BatchParseThreader(object):
             time.sleep(5)
             for i in range(num_threads):
                 # TODO: this doesn't exactly work
-                if time.time() - self.time.get(i, time.time()) > max_time:
-                    try:
-                        print 'KILLING PROCESS %i' % i
-                        os.killpg(self.processes[i].pid, SIGTERM)
-                    except:
-                        pass
+                #if time.time() - self.time.get(i, time.time()) > max_time:
+                #    try:
+                #        print 'KILLING PROCESS %i' % i
+                #        os.killpg(self.processes[i].pid, SIGTERM)
+                #    except:
+                #        pass
                 if i in self.processes:
                     if self.processes[i].poll() is not None:
                         parsed_count += 1
