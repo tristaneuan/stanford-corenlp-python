@@ -70,28 +70,27 @@ class BatchParseThreader(object):
             self.time[i] = time.time()
             self.processes[i] = Popen([command], shell=True, preexec_fn=os.setsid)
 
-    def parse(self, num_threads=5, max_time=3600):
+    def parse(self, num_threads=5):
+        ''' Manages threaded subprocesses responsible for parsing subdirectories of text
+        :param num_threads: number of concurrent threads, default 5
+        '''
         sd = Subdir(self.directory)
         for i in range(num_threads):
             if sd.getLen() == 1 or sd.isNext():
                 self.open_process(i, sd.getNext())
         parsed_count = 0
-        while parsed_count < sd.getLen():
+        sdlen = sd.getLen()
+        while True:
+            if parsed_count == sdlen and len(self.processes) == 0:
+                break
             # sleep to avoid looping incessantly
             time.sleep(5)
-            for i in range(num_threads):
-                # TODO: this doesn't exactly work
-                #if time.time() - self.time.get(i, time.time()) > max_time:
-                #    try:
-                #        print 'KILLING PROCESS %i' % i
-                #        os.killpg(self.processes[i].pid, SIGTERM)
-                #    except:
-                #        pass
-                if i in self.processes:
-                    if self.processes[i].poll() is not None:
-                        parsed_count += 1
-                        if sd.isNext():
-                            self.open_process(i, sd.getNext())
+            for i in self.processes.keys():
+                if self.processes[i].poll() is not None:
+                    parsed_count +=  1
+                    del self.processes[i]
+                    if sd.isNext():
+                        self.open_process(i, sd.getNext())
 
         print 'parsed count: %i' % parsed_count
         return self.xml_dir
