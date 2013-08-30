@@ -51,7 +51,7 @@ class BatchParseThreader(object):
             os.makedirs(file_list_path)
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
-        # don't include xml files in filelist if they already exist
+        # don't include files in filelist if equivalent xml file already exists
         preexisting = {}
         for xml_file in os.listdir(output_directory):
             pageid = re.sub('\.xml$', '', xml_file)
